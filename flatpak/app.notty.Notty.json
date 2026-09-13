@@ -1,0 +1,8 @@
+{
+  "app-id": "app.notty.Notty",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "47",
+  "sdk": "org.gnome.Sdk",
+  "command": "notty",
+  "modules": [{ "name": "notty", "buildsystem": "meson", "sources": [{ "type": "dir", "path": "../" }] }]
+}

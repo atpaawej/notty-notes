@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Notty
+Comment=Native notes for Ubuntu — macOS style, lightweight
+Exec=notty
+Icon=app.notty.Notty
+Terminal=false
+Type=Application
+Categories=Office;Utility;
+StartupWMClass=Notty
+Keywords=notes;notty;jotter;

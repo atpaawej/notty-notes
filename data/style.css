@@ -1,0 +1,4 @@
+/* Adwaita-native, minimal overrides */
+.note-preview { opacity: 0.7; font-size: 0.9em; }
+.pinned-row { font-weight: 600; }
+.tag-pill { background: alpha(@accent_bg_color, 0.15); border-radius: 999px; padding: 2px 8px; font-size: 0.85em;}

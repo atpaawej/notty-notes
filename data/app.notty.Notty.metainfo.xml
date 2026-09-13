@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>app.notty.Notty</id>
+  <name>Notty</name>
+  <summary>Lightweight native notes for Ubuntu</summary>
+  <description><p>macOS Notes UX for Ubuntu — GTK4 + Libadwaita, SQLite FTS5.</p></description>
+  <launchable type="desktop-id">app.notty.Notty.desktop</launchable>
+</component>

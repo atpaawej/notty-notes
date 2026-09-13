@@ -1,0 +1,9 @@
+<schemalist>
+  <schema id="app.notty.Notty" path="/app/notty/Notty/">
+    <key name="window-width" type="i"><default>1100</default></key>
+    <key name="window-height" type="i"><default>700</default></key>
+    <key name="sidebar-width" type="i"><default>220</default></key>
+    <key name="notes-width" type="i"><default>340</default></key>
+    <key name="color-scheme" type="s"><default>'system'</default></key>
+  </schema>
+</schemalist>

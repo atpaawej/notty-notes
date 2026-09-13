@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+build/
+builddir/
+.flatpak-builder/
+.venv/
+venv/
+*.db
+*.log
+.helium/
+.pytest_cache/
+.mypy_cache/
