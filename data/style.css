@@ -1,36 +1,134 @@
-/* Notty 0.1.3 — clean, uncluttered, Adwaita-native */
-@define-color notty_sidebar_bg @sidebar_bg_color;
-@define-color notty_view_bg @view_bg_color;
+/* Notty — Apple Notes inspired, GTK4 Libadwaita • 2026 */
+@define-color notty_sidebar_bg mix(@sidebar_bg_color, @window_bg_color, 0.5);
+@define-color notty_card_bg @view_bg_color;
+@define-color notty_accent @accent_bg_color;
 
-/* Sidebar: subtle, grouped */
-.notty-sidebar { background: @sidebar_bg_color; }
-.notty-sidebar row { padding: 6px 10px; border-radius: 8px; margin: 2px 8px; }
-.notty-sidebar row:selected { background: alpha(@accent_bg_color, 0.15); }
-.notty-sidebar .folder-icon { opacity: 0.8; }
-.notty-sidebar .dim { opacity: 0.6; font-size: 0.85em; }
-
-/* Notes list: cards */
-.notty-notes-list { background: @view_bg_color; }
-.notty-note-row { padding: 10px 12px; border-radius: 10px; margin: 4px 8px; border: 1px solid transparent; }
-.notty-note-row:selected { background: @accent_bg_color; color: @accent_fg_color; }
-.notty-note-row:selected .dim-label { color: @accent_fg_color; opacity: 0.8; }
-.notty-note-row.pinned { border-color: alpha(@accent_bg_color, 0.25); }
-.note-title { font-weight: 600; font-size: 1em; }
-.note-preview { opacity: 0.65; font-size: 0.9em; }
-.note-date { opacity: 0.5; font-size: 0.8em; }
-
-/* Editor: paper, no harsh white, uses theme view_bg */
-.notty-editor { background: @view_bg_color; border-radius: 12px; border: 1px solid alpha(@borders, 0.5); }
-.notty-editor textview { padding: 16px; font-size: 1.05em; line-height: 1.5; }
-.notty-toolbar { background: @headerbar_bg_color; border-radius: 10px; padding: 6px; }
-.notty-toolbar button { min-width: 36px; }
-.notty-empty { opacity: 0.7; }
-.notty-empty title { font-size: 1.2em; font-weight: 700; }
-.tag-pill { background: alpha(@accent_bg_color, 0.13); border-radius: 999px; padding: 4px 10px; font-size: 0.85em; }
-.tag-pill:selected { background: @accent_bg_color; color: @accent_fg_color; }
-
-/* Footer */
-.notty-footer { opacity: 0.6; font-size: 0.85em; padding: 6px 12px; }
-
-/* Window */
+/* ——— Global ——— */
 window { background: @window_bg_color; }
+headerbar { background: @headerbar_bg_color; border-bottom: 1px solid alpha(@borders, 0.6); }
+headerbar .title { font-weight: 800; letter-spacing: -0.02em; }
+
+/* ——— Sidebar ——— */
+.notty-sidebar {
+  background: @notty_sidebar_bg;
+  border-right: 1px solid alpha(@borders, 0.55);
+}
+.notty-sidebar-header {
+  font-size: 0.75em; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; opacity: 0.55; margin: 16px 12px 6px 12px;
+}
+.notty-sidebar row {
+  padding: 7px 10px; border-radius: 10px; margin: 2px 8px;
+  transition: background 150ms ease;
+}
+.notty-sidebar row:selected {
+  background: alpha(@accent_bg_color, 0.14);
+  color: @accent_color;
+}
+.notty-sidebar row:selected image { opacity: 1; }
+.notty-sidebar .folder-icon { opacity: 0.75; }
+.notty-sidebar .count-pill {
+  background: alpha(@view_fg_color, 0.08); border-radius: 999px;
+  padding: 2px 7px; font-size: 0.75em; font-weight: 600; opacity: 0.7;
+}
+.notty-sidebar row:selected .count-pill {
+  background: @accent_bg_color; color: @accent_fg_color; opacity: 1;
+}
+.notty-new-folder {
+  margin: 8px; border-radius: 10px; padding: 6px;
+  background: alpha(@view_bg_color, 0.7); border: 1px solid alpha(@borders, 0.5);
+}
+
+/* ——— Search ——— */
+.notty-search { padding: 10px 10px 8px 10px; }
+.notty-search entry, .notty-search searchentry {
+  border-radius: 12px; padding: 6px 10px;
+  background: alpha(@view_fg_color, 0.06); border: 1px solid transparent;
+}
+.notty-search entry:focus { border-color: alpha(@accent_bg_color, 0.4); background: @view_bg_color; }
+.notty-filter-pill { border-radius: 999px; padding: 4px 10px; font-size: 0.82em; font-weight: 600; }
+.notty-filter-pill:checked { background: @accent_bg_color; color: @accent_fg_color; }
+
+/* ——— Notes List ——— */
+.notty-notes-list { background: @view_bg_color; }
+.notty-notes-header {
+  font-size: 0.75em; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; opacity: 0.5; margin: 10px 12px 4px 12px;
+}
+.notty-note-row {
+  padding: 12px 14px; border-radius: 12px; margin: 5px 8px;
+  background: @card_bg_color; border: 1px solid alpha(@borders, 0.45);
+  transition: all 140ms ease;
+}
+.notty-note-row:hover { background: mix(@card_bg_color, @view_bg_color, 0.7); border-color: alpha(@borders, 0.7); }
+.notty-note-row:selected {
+  background: @accent_bg_color; color: @accent_fg_color;
+  border-color: @accent_bg_color; box-shadow: 0 2px 10px alpha(@accent_bg_color, 0.25);
+}
+.notty-note-row:selected .dim-label { color: @accent_fg_color; opacity: 0.82; }
+.notty-note-row.pinned { border-color: alpha(@accent_bg_color, 0.3); border-left-width: 3px; border-left-color: @accent_bg_color; }
+.notty-note-row.locked { opacity: 0.85; }
+.note-title { font-weight: 650; font-size: 0.98em; letter-spacing: -0.01em; }
+.note-preview { opacity: 0.62; font-size: 0.88em; line-height: 1.35; }
+.note-date { opacity: 0.5; font-size: 0.78em; font-weight: 500; }
+.notty-pin-icon { color: @accent_bg_color; }
+.notty-note-row:selected .notty-pin-icon { color: @accent_fg_color; }
+
+/* ——— Empty states ——— */
+.notty-empty { opacity: 0.92; padding: 24px; }
+.notty-empty image { opacity: 0.35; }
+.notty-empty .title { font-size: 1.05em; font-weight: 750; letter-spacing: -0.02em; }
+.notty-empty .subtitle { font-size: 0.9em; opacity: 0.65; }
+.notty-empty-cta { border-radius: 999px; padding: 8px 18px; font-weight: 650; margin-top: 8px; }
+
+/* ——— Editor ——— */
+.notty-editor-wrap { background: @view_bg_color; }
+.notty-editor-card {
+  background: @view_bg_color; border-radius: 14px;
+  border: 1px solid alpha(@borders, 0.5); margin: 12px;
+  box-shadow: 0 1px 3px alpha(black, 0.06);
+}
+.notty-editor textview, .notty-editor-card textview {
+  padding: 20px 22px; font-size: 1.02em; line-height: 1.62;
+  letter-spacing: -0.01em;
+}
+.notty-toolbar {
+  background: alpha(@headerbar_bg_color, 0.85); backdrop-filter: blur(12px);
+  border: 1px solid alpha(@borders, 0.5); border-radius: 999px;
+  padding: 5px 6px; margin: 10px 12px 0 12px;
+  box-shadow: 0 2px 8px alpha(black, 0.07);
+}
+.notty-toolbar button { min-width: 34px; min-height: 34px; border-radius: 999px; }
+.notty-toolbar button:hover { background: alpha(@view_fg_color, 0.07); }
+.notty-toolbar separator { opacity: 0.4; margin: 4px 2px; }
+.notty-editor-meta { opacity: 0.55; font-size: 0.82em; }
+.notty-word-count { font-weight: 600; }
+
+/* ——— Tags ——— */
+.tag-pill {
+  background: alpha(@accent_bg_color, 0.11); border: 1px solid alpha(@accent_bg_color, 0.14);
+  border-radius: 999px; padding: 5px 11px; font-size: 0.84em; font-weight: 600;
+  transition: all 120ms ease;
+}
+.tag-pill:hover { background: alpha(@accent_bg_color, 0.16); }
+.tag-pill:checked { background: @accent_bg_color; color: @accent_fg_color; border-color: @accent_bg_color; }
+.notty-tags-header { font-size: 0.75em; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.5; }
+
+/* ——— Footer ——— */
+.notty-footer { padding: 8px 14px; border-top: 1px solid alpha(@borders, 0.45); background: alpha(@view_bg_color, 0.8); }
+.notty-footer .dim-label { opacity: 0.62; font-size: 0.84em; }
+
+/* ——— Buttons ——— */
+.pill { border-radius: 999px; }
+button.suggested-action.pill { font-weight: 700; letter-spacing: -0.01em; box-shadow: 0 2px 8px alpha(@accent_bg_color, 0.3); }
+button.flat.circular { border-radius: 999px; }
+
+/* ——— Paned handle ——— */
+paned > separator { background: alpha(@borders, 0.5); min-width: 1px; min-height: 1px; }
+
+/* ——— Scrollbar polish ——— */
+scrollbar { opacity: 0.5; }
+scrollbar:hover { opacity: 0.9; }
+
+/* ——— Adwaita clamp ——— */
+.notty-editor-clamp { max-width: 760px; }

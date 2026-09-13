@@ -1,4 +1,4 @@
-"""Search — spacious, clear, filter chips."""
+"""Search — Apple Notes: rounded field, filter pill, hint."""
 def build_search(store, on_change):
     try:
         import gi
@@ -7,35 +7,49 @@ def build_search(store, on_change):
     except Exception:
         return None
 
-    root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-    root.set_margin_top(8); root.set_margin_start(8); root.set_margin_end(8)
+    root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+    root.add_css_class("notty-search")
 
-    # search row
     row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
     entry = Gtk.SearchEntry(placeholder_text="Search notes…", hexpand=True)
-    entry.add_css_class("rounded")
-    # pinned toggle as subtle chip
-    pin = Gtk.ToggleButton(label="📌 Pinned")
-    pin.add_css_class("pill")
+    entry.set_margin_start(2); entry.set_margin_end(2)
+    pin = Gtk.ToggleButton(label="Pinned")
+    pin.add_css_class("pill"); pin.add_css_class("notty-filter-pill")
     pin.set_tooltip_text("Show pinned only")
+    pin.set_icon_name("view-pin-symbolic")
     row.append(entry); row.append(pin)
     root.append(row)
 
-    # helper: emit combined state
+    hint = Gtk.Label(xalign=0)
+    hint.add_css_class("dim-label"); hint.add_css_class("caption")
+    hint.set_visible(False)
+    hint.set_margin_start(4)
+    root.append(hint)
+
     def _emit(*_):
         q = entry.get_text()
         pinned = pin.get_active()
         tag = store.get_tag() if hasattr(store, "get_tag") else None
         on_change(q, pinned, tag)
+        # hint
+        if q.strip() or pinned or tag:
+            parts = []
+            if q.strip(): parts.append(f'“{q.strip()}”')
+            if tag: parts.append(f"#{tag}")
+            if pinned: parts.append("Pinned")
+            hint.set_text("Filter: " + " • ".join(parts))
+            hint.set_visible(True)
+        else:
+            hint.set_visible(False)
 
     entry.connect("search-changed", _emit)
     pin.connect("toggled", _emit)
     entry.connect("activate", _emit)
 
-    # subtle hint below when filtering
-    hint = Gtk.Label(xalign=0); hint.add_css_class("dim-label"); hint.add_css_class("caption"); hint.set_visible(False)
-    root.append(hint)
-
+    # expose for external reset
+    root._entry = entry
+    root._pin = pin
+    root._emit = _emit
     def _set_hint(txt):
         if txt:
             hint.set_text(txt); hint.set_visible(True)

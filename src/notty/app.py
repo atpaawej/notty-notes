@@ -1,4 +1,4 @@
-"""AppShell — clean, uncluttered 3-pane, proper empty/selected states."""
+"""AppShell — Apple Notes 3-pane, all states, pixel-perfect."""
 import os, uuid, time
 from pathlib import Path
 
@@ -103,10 +103,15 @@ class NottyApp:
             return None
 
         Adw.init()
-        # load css
+        # load css — Apple polish
         try:
             css = Gtk.CssProvider()
-            for p in [Path(__file__).parent / "../../data/style.css", Path("/usr/share/notty/style.css"), Path("data/style.css")]:
+            candidates = [
+                Path(__file__).parent / "../../data/style.css",
+                Path("/usr/share/notty/style.css"),
+                Path("data/style.css"),
+            ]
+            for p in candidates:
                 pp = Path(p).resolve()
                 if pp.exists():
                     css.load_from_path(str(pp)); break
@@ -117,35 +122,41 @@ class NottyApp:
         win = Adw.ApplicationWindow()
         win.set_title("Notty")
         win.set_default_size(self.settings.get_int("window-width"), self.settings.get_int("window-height"))
-        # icon from data/notty.png or hicolor
-        try:
-            icon = Path(__file__).parent / "../../data/notty.png"
-            if icon.exists():
-                win.set_default_icon_name(str(icon))
-        except Exception:
-            pass
 
         core = self
         sel_ref = {"nid": None}
 
-        # ---- header ----
+        # ---- HeaderBar: Apple minimal ----
         header = Adw.HeaderBar()
-        # left title with logo
-        title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        header.set_show_end_title_buttons(True)
+        header.set_show_start_title_buttons(True)
+        # centered logo + wordmark
+        title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8, halign=Gtk.Align.CENTER)
         try:
-            logo = Gtk.Image.new_from_file(str(Path(__file__).parent / "../../data/notty.png"))
-            logo.set_pixel_size(22)
+            logo = Gtk.Image.new_from_file(str((Path(__file__).parent / "../../data/notty.png").resolve()))
+            logo.set_pixel_size(20)
             title_box.append(logo)
         except Exception:
             title_box.append(Gtk.Image.new_from_icon_name("note-symbolic"))
-        title_box.append(Gtk.Label(label="Notty", css_classes=["title"]))
+        t = Gtk.Label(label="Notty")
+        t.add_css_class("title")
+        title_box.append(t)
         header.set_title_widget(title_box)
 
-        new_btn = Gtk.Button(label="New Note", css_classes=["suggested-action", "pill"])
+        new_btn = Gtk.Button(label="New Note")
+        new_btn.add_css_class("suggested-action"); new_btn.add_css_class("pill")
         new_btn.set_tooltip_text("Create new note (Ctrl+N)")
+        new_btn.set_icon_name("list-add-symbolic")
         header.pack_end(new_btn)
 
-        # ---- slices ----
+        # delete button (dim, only active when note selected)
+        del_btn = Gtk.Button(icon_name="user-trash-symbolic")
+        del_btn.add_css_class("flat"); del_btn.add_css_class("circular")
+        del_btn.set_tooltip_text("Delete note (Ctrl+Delete)")
+        del_btn.set_sensitive(False)
+        header.pack_end(del_btn)
+
+        # ---- Slices ----
         from .features.folders.view import build_sidebar
         from .features.notes_list.view import build_notes_list
         from .features.editor.view import build_editor
@@ -153,49 +164,95 @@ class NottyApp:
         from .features.tags.view import build_tag_browser
         from .features.pin_lock.view import build_pin_lock_buttons
 
-        # state helpers — defined BEFORE use to avoid UnboundLocalError
+        # State refs — defined before use
         notes_wrapper = {"w": None, "sel": None}
-        editor_root = {"box": None, "buf": None, "stack": None}
-        footer = {"label": None, "date": None}
+        editor_root = {"box": None, "buf": None, "stack": None, "tv": None}
+        footer = {"words": None, "date": None, "pin_box": None}
+        search_ref = {"box": None, "entry": None}
 
+        # ---- Helpers: all states ----
         def _refresh_notes():
-            # recompute empty states
             try:
                 w = notes_wrapper["w"]
                 if w and hasattr(w, "_update_empty"): w._update_empty()
             except Exception: pass
-            # if selected note not in new filtered list, clear editor
+            # if selected nid filtered out → clear
             try:
                 nid = sel_ref["nid"]
                 if nid:
                     rows = core.db.list_notes(folder_id=core.selected_folder, query=getattr(core.search, "query", "") or "", tag=core.search.get_tag(), pinned_only=getattr(core.search, "pinned_only", False))
                     if nid not in [r["id"] for r in rows]:
-                        sel_ref["nid"] = None; core.selected_nid = None
                         _show_empty()
+                        sel_ref["nid"] = None
+                        core.selected_nid = None
             except Exception: pass
-            # refresh tags
             try:
                 if hasattr(core.tags, "refresh"): core.tags.refresh()
             except: pass
-            # update word count footer
             _update_footer()
+            _sync_delete_btn()
 
         def _show_empty():
             try: editor_root["stack"].set_visible_child_name("empty")
             except: pass
             sel_ref["nid"] = None
+            # disable editor actions
+            try: editor_root["tv"].set_editable(False); editor_root["tv"].set_can_focus(False)
+            except: pass
+            _sync_pin_lock(None)
+
+        def _show_locked():
+            try: editor_root["stack"].set_visible_child_name("locked")
+            except: pass
+            _sync_pin_lock(sel_ref["nid"])
 
         def _show_editor():
             try: editor_root["stack"].set_visible_child_name("editor")
             except: pass
+            try: editor_root["tv"].set_editable(True); editor_root["tv"].set_can_focus(True)
+            except: pass
+
+        def _sync_delete_btn():
+            try: del_btn.set_sensitive(bool(sel_ref["nid"]))
+            except: pass
+
+        def _sync_pin_lock(nid):
+            try:
+                pb = footer.get("pin_box")
+                if not pb:
+                    return
+                row = core.db.get_note(nid) if nid else None
+                if row:
+                    is_pinned = bool(row["pinned"])
+                    is_locked = bool(row["locked"])
+                    # use helpers that block signals
+                    if hasattr(pb, "_set_pin"):
+                        pb._set_pin(is_pinned)
+                        pb._set_lock(is_locked)
+                    else:
+                        pb._pin.set_active(is_pinned)
+                        pb._lock.set_active(is_locked)
+                    if is_locked:
+                        _show_locked()
+                else:
+                    if hasattr(pb, "_set_pin"):
+                        pb._set_pin(False)
+                        pb._set_lock(False)
+                    else:
+                        try: pb._pin.set_active(False)
+                        except: pass
+                        try: pb._lock.set_active(False)
+                        except: pass
+            except Exception:
+                pass
 
         def _update_footer():
             try:
                 buf = editor_root["buf"]
                 txt = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False) if buf else ""
                 wc = len(txt.split()) if txt.strip() else 0
-                footer["label"].set_text(f"{wc} words" if wc else "Empty note")
-                # date
+                footer["words"].set_text(f"{wc} words" if wc else "Empty note")
+                footer["words"].add_css_class("notty-word-count")
                 nid = sel_ref["nid"]
                 if nid:
                     row = core.db.get_note(nid)
@@ -214,125 +271,218 @@ class NottyApp:
             core.select_folder(fid)
             _refresh_notes()
 
+        # Build sidebar + tags
         sidebar = build_sidebar(core.folders, on_folder) or Gtk.Label(label="Folders")
 
         search_box, _entry = build_search(core.search, lambda q, p, t: (core.set_search(q, p, t), _refresh_notes())) or (Gtk.Box(), None)
+        search_ref["box"] = search_box; search_ref["entry"] = _entry
         tag_browser = build_tag_browser(core.tags, lambda t: (core.select_tag(t), _refresh_notes())) or Gtk.Label(label="Tags")
 
         left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, vexpand=True)
-        left.set_size_request(250, -1)
+        left.set_size_request(240, -1)
         left.append(sidebar)
         left.append(Gtk.Separator())
-        # tags scroll
-        tag_scroll = Gtk.ScrolledWindow(child=tag_browser, vexpand=True, hexpand=True, vscrollbar_policy=Gtk.PolicyType.AUTOMATIC)
+        tag_scroll = Gtk.ScrolledWindow(child=tag_browser, vexpand=True, hexpand=True, vscrollbar_policy=Gtk.PolicyType.AUTOMATIC, hscrollbar_policy=Gtk.PolicyType.NEVER)
         tag_scroll.set_min_content_height(120)
+        tag_scroll.set_vexpand(True)
         left.append(tag_scroll)
+        left.add_css_class("notty-sidebar")
 
+        # Notes list — Apple: search on top, header count, polished empty states
         def on_pick(nid):
+            # locked check
+            if nid:
+                row = core.db.get_note(nid)
+                if row and row["locked"]:
+                    sel_ref["nid"] = nid; core.selected_nid = nid
+                    # load empty to avoid leaking
+                    _show_locked()
+                    _sync_pin_lock(nid)
+                    _update_footer()
+                    _sync_delete_btn()
+                    return
             sel_ref["nid"] = nid; core.selected_nid = nid
+            _sync_delete_btn()
             if not nid:
                 _show_empty(); _update_footer(); return
             txt = core.open_note(nid)
             buf = editor_root["buf"]
             if buf:
-                # block signal to avoid double save
+                # block changed signal to avoid double save
+                try: buf.handler_block_by_func(_on_editor_changed)
+                except: pass
                 buf.set_text(txt or "", -1)
+                try: buf.handler_unblock_by_func(_on_editor_changed)
+                except: pass
             _show_editor(); _update_footer()
-            # sync pin/lock toggles
-            try:
-                row = core.db.get_note(nid)
-                if row:
-                    pin_box._pin.set_active(bool(row["pinned"]))
-                    pin_box._lock.set_active(bool(row["locked"]))
-                else:
-                    pin_box._pin.set_active(False); pin_box._lock.set_active(False)
-            except Exception:
-                pass
+            _sync_pin_lock(nid)
 
         notes_area, sel = build_notes_list(core.notes, on_pick) or (Gtk.Label(label="Notes"), None)
         notes_wrapper["w"] = notes_area; notes_wrapper["sel"] = sel
 
+        # wire filtered-empty clear → reset search/tag
+        def _clear_filters():
+            try:
+                if search_ref["entry"]:
+                    search_ref["entry"].set_text("")
+                core.select_tag(None)
+                core.set_search("", False, None)
+                _refresh_notes()
+            except: pass
+        try:
+            notes_area._clear_btn.connect("clicked", lambda *_: _clear_filters())
+        except: pass
+
         mid = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, hexpand=True, vexpand=True)
-        mid.set_size_request(340, -1)
+        mid.set_size_request(320, -1)
         mid.append(search_box)
         mid.append(Gtk.Separator())
         mid.append(notes_area)
 
-        # editor
+        # Editor
         def _on_editor(text):
             core.on_editor_text(text)
             _update_footer()
 
-        ebox, buf, _tv = build_editor(_on_editor) or (Gtk.Box(), None, None)
-        # ebox is root Box with toolbar + stack
-        if ebox and hasattr(ebox, "_stack"):
-            editor_root["box"] = ebox; editor_root["buf"] = buf; editor_root["stack"] = ebox._stack
-            editor_root["buf"] = buf
-        else:
-            # fallback if view didn't expose stack
-            editor_root["box"] = ebox; editor_root["buf"] = buf; editor_root["stack"] = Gtk.Stack()
+        def _on_editor_changed(*_):
+            try:
+                txt = editor_root["buf"].get_text(editor_root["buf"].get_start_iter(), editor_root["buf"].get_end_iter(), False)
+                _on_editor(txt)
+            except: pass
 
-        # footer + pin/lock
-        bottom = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        ebox, buf, _tv = build_editor(_on_editor) or (Gtk.Box(), None, None)
+        if ebox and hasattr(ebox, "_stack"):
+            editor_root["box"] = ebox; editor_root["buf"] = buf; editor_root["stack"] = ebox._stack; editor_root["tv"] = _tv
+        else:
+            editor_root["box"] = ebox; editor_root["buf"] = buf; editor_root["stack"] = Gtk.Stack(); editor_root["tv"] = _tv
+
+        def _unlock_current():
+            nid = sel_ref["nid"]
+            if not nid: return
+            core.db.toggle_lock(nid)
+            _sync_pin_lock(nid)
+            # re-open
+            on_pick(nid)
+            _refresh_notes()
+
+        # Footer: date • words • pin/lock
+        bottom = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         bottom.add_css_class("notty-footer")
-        bottom.set_margin_top(6); bottom.set_margin_start(8); bottom.set_margin_end(8); bottom.set_margin_bottom(4)
-        date_lbl = Gtk.Label(xalign=0, hexpand=True); date_lbl.add_css_class("dim-label")
-        word_lbl = Gtk.Label(xalign=1); word_lbl.add_css_class("dim-label")
-        footer["label"] = word_lbl; footer["date"] = date_lbl
+        bottom.set_margin_top(6); bottom.set_margin_start(12); bottom.set_margin_end(12); bottom.set_margin_bottom(8)
+        date_lbl = Gtk.Label(xalign=0, hexpand=True); date_lbl.add_css_class("dim-label"); date_lbl.add_css_class("notty-editor-meta")
+        word_lbl = Gtk.Label(xalign=1); word_lbl.add_css_class("dim-label"); word_lbl.add_css_class("notty-editor-meta")
+        footer["words"] = word_lbl; footer["date"] = date_lbl
 
         pin_box = build_pin_lock_buttons(core.pin_lock, lambda: sel_ref["nid"], _refresh_notes) or Gtk.Box()
-        # pin_box was created with deferred _refresh_notes already fixed
+        footer["pin_box"] = pin_box
 
         bottom.append(date_lbl); bottom.append(word_lbl); bottom.append(pin_box)
 
         right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, hexpand=True, vexpand=True)
         right.append(ebox); right.append(bottom)
 
-        # hook buffer word count + save
+        # Connect buffer changed (once)
         if buf:
-            def _on_changed(*_):
-                txt = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
-                _on_editor(txt)
-            buf.connect("changed", _on_changed)
+            buf.connect("changed", _on_editor_changed)
 
-        # panes
-        paned1 = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        paned1.set_start_child(left); paned1.set_end_child(mid); paned1.set_position(270); paned1.set_shrink_start_child(False)
-        paned2 = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        paned2.set_start_child(paned1); paned2.set_end_child(right); paned2.set_position(620); paned2.set_shrink_start_child(False)
+        # — Paned: Apple proportions, smooth —
+        paned_left = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        paned_left.set_start_child(left); paned_left.set_end_child(mid)
+        paned_left.set_position(260); paned_left.set_shrink_start_child(False); paned_left.set_shrink_end_child(False)
+        paned_left.set_resize_start_child(False); paned_left.set_resize_end_child(False)
+
+        paned_main = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        paned_main.set_start_child(paned_left); paned_main.set_end_child(right)
+        paned_main.set_position(600); paned_main.set_shrink_start_child(False); paned_main.set_shrink_end_child(False)
+        paned_main.set_resize_start_child(False); paned_main.set_resize_end_child(True)
+        paned_main.set_hexpand(True); paned_main.set_vexpand(True)
 
         def _new_note():
             nid = core.create_note()
             _refresh_notes()
             on_pick(nid)
+            # select in list view
+            try:
+                # find index
+                for i in range(core.notes.model.get_n_items()):
+                    if core.notes.model.get_item(i).nid == nid:
+                        notes_wrapper["sel"].set_selected(i); break
+            except: pass
             if buf:
-                buf.set_text("", -1); buf.place_cursor(buf.get_start_iter())
-                # focus editor
-                try: editor_root["box"].get_parent().get_parent().grab_focus()
+                # clear for typing
+                try: buf.handler_block_by_func(_on_editor_changed)
                 except: pass
+                buf.set_text("", -1)
+                try: buf.handler_unblock_by_func(_on_editor_changed)
+                except: pass
+                buf.place_cursor(buf.get_start_iter())
+                # focus editor
+                try: editor_root["tv"].grab_focus()
+                except: pass
+            _show_editor()
 
         new_btn.connect("clicked", lambda *_: _new_note())
+        del_btn.connect("clicked", lambda *_: _delete_current())
+        try:
+            notes_area._cta.connect("clicked", lambda *_: _new_note())
+        except: pass
+        try:
+            ebox._create_btn.connect("clicked", lambda *_: _new_note())
+        except: pass
+        try:
+            ebox._unlock_btn.connect("clicked", lambda *_: _unlock_current())
+        except: pass
 
-        # keyboard
+        def _delete_current():
+            nid = sel_ref["nid"]
+            if not nid: return
+            core.delete_selected()
+            sel_ref["nid"] = None
+            _show_empty()
+            _refresh_notes()
+            _sync_delete_btn()
+
+        # Keyboard — like Apple
         ctrl = Gtk.EventControllerKey()
+        ctrl.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
         def _key(_, keyval, keycode, state):
-            # Ctrl+N
-            if state & Gdk.ModifierType.CONTROL_MASK and keyval == Gdk.KEY_n:
+            is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+            is_cmd = bool(state & Gdk.ModifierType.CONTROL_MASK)  # treat Ctrl as Cmd on Linux
+            # Ctrl/Cmd + N
+            if is_cmd and keyval == Gdk.KEY_n:
                 _new_note(); return True
-            if keyval == Gdk.KEY_Delete and sel_ref["nid"] and (state & Gdk.ModifierType.CONTROL_MASK):
-                core.delete_selected(); sel_ref["nid"] = None; _show_empty(); _refresh_notes(); return True
+            # Ctrl/Cmd + F → focus search
+            if is_cmd and keyval == Gdk.KEY_f:
+                try: search_ref["entry"].grab_focus(); return True
+                except: pass
+            # Cmd/Ctrl + Backspace/Delete
+            if nid := sel_ref["nid"]:
+                if keyval == Gdk.KEY_Delete and is_ctrl:
+                    _delete_current(); return True
+                if keyval == Gdk.KEY_BackSpace and is_ctrl:
+                    _delete_current(); return True
+            # Escape → clear selection
+            if keyval == Gdk.KEY_Escape:
+                if sel_ref["nid"]:
+                    try: notes_wrapper["sel"].set_selected(Gtk.INVALID_LIST_POSITION)
+                    except: pass
+                    sel_ref["nid"] = None; core.selected_nid = None
+                    _show_empty(); _update_footer(); _sync_delete_btn(); return True
             return False
         ctrl.connect("key-pressed", _key)
         win.add_controller(ctrl)
 
-        # initial empty
-        _show_empty(); _update_footer()
+        # initial state: empty editor, update counts
+        _show_empty(); _update_footer(); _refresh_notes(); _sync_delete_btn()
 
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        content.append(header); content.append(paned2)
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
+        content.append(header); content.append(paned_main)
         win.set_content(content)
+        try: win.set_icon_name("app.notty.Notty")
+        except: pass
+        # save window size on close
         try:
-            win.set_icon_name("app.notty.Notty")
+            win.connect("close-request", lambda *_: (core.settings.set_int("window-width", win.get_width()), core.settings.set_int("window-height", win.get_height())))
         except: pass
         return win
 
@@ -341,6 +491,7 @@ def run():
     if "--headless" in sys.argv:
         a = NottyApp(db_path=":memory:")
         a.create_note(); a.on_editor_text("Hello #test")
+        a.editor.flush_now()
         print("headless ok", a.db.list_notes())
         return
     try:
