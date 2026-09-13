@@ -1,4 +1,36 @@
-/* Adwaita-native, minimal overrides */
-.note-preview { opacity: 0.7; font-size: 0.9em; }
-.pinned-row { font-weight: 600; }
-.tag-pill { background: alpha(@accent_bg_color, 0.15); border-radius: 999px; padding: 2px 8px; font-size: 0.85em;}
+/* Notty 0.1.3 — clean, uncluttered, Adwaita-native */
+@define-color notty_sidebar_bg @sidebar_bg_color;
+@define-color notty_view_bg @view_bg_color;
+
+/* Sidebar: subtle, grouped */
+.notty-sidebar { background: @sidebar_bg_color; }
+.notty-sidebar row { padding: 6px 10px; border-radius: 8px; margin: 2px 8px; }
+.notty-sidebar row:selected { background: alpha(@accent_bg_color, 0.15); }
+.notty-sidebar .folder-icon { opacity: 0.8; }
+.notty-sidebar .dim { opacity: 0.6; font-size: 0.85em; }
+
+/* Notes list: cards */
+.notty-notes-list { background: @view_bg_color; }
+.notty-note-row { padding: 10px 12px; border-radius: 10px; margin: 4px 8px; border: 1px solid transparent; }
+.notty-note-row:selected { background: @accent_bg_color; color: @accent_fg_color; }
+.notty-note-row:selected .dim-label { color: @accent_fg_color; opacity: 0.8; }
+.notty-note-row.pinned { border-color: alpha(@accent_bg_color, 0.25); }
+.note-title { font-weight: 600; font-size: 1em; }
+.note-preview { opacity: 0.65; font-size: 0.9em; }
+.note-date { opacity: 0.5; font-size: 0.8em; }
+
+/* Editor: paper, no harsh white, uses theme view_bg */
+.notty-editor { background: @view_bg_color; border-radius: 12px; border: 1px solid alpha(@borders, 0.5); }
+.notty-editor textview { padding: 16px; font-size: 1.05em; line-height: 1.5; }
+.notty-toolbar { background: @headerbar_bg_color; border-radius: 10px; padding: 6px; }
+.notty-toolbar button { min-width: 36px; }
+.notty-empty { opacity: 0.7; }
+.notty-empty title { font-size: 1.2em; font-weight: 700; }
+.tag-pill { background: alpha(@accent_bg_color, 0.13); border-radius: 999px; padding: 4px 10px; font-size: 0.85em; }
+.tag-pill:selected { background: @accent_bg_color; color: @accent_fg_color; }
+
+/* Footer */
+.notty-footer { opacity: 0.6; font-size: 0.85em; padding: 6px 12px; }
+
+/* Window */
+window { background: @window_bg_color; }
