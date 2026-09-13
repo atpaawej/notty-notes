@@ -1,4 +1,4 @@
-project('notty', version: '0.1.3', meson_version: '>= 0.59')
+project('notty', version: '0.1.4', meson_version: '>= 0.59')
 
 python = import('python').find_installation('python3')
 install_subdir('src/notty', install_dir: python.get_install_dir())

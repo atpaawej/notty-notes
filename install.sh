@@ -5,7 +5,7 @@
 set -e
 
 REPO="atpaawej/notty-notes"
-VERSION="0.1.3"
+VERSION="0.1.4"
 DEB="notty_${VERSION}_all.deb"
 RAW_BASE="https://raw.githubusercontent.com/${REPO}/master"
 RELEASE_URL="https://github.com/${REPO}/releases/download/v${VERSION}/${DEB}"

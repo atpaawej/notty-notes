@@ -97,7 +97,19 @@ def build_sidebar(store, on_select):
     add_btn.connect("clicked", _show_entry)
     ok.connect("clicked", _commit)
     entry.connect("activate", _commit)
-    entry.connect("escape", lambda *_: entry_box.set_visible(False))
+    # Escape to cancel — use key controller (Entry has no "escape" signal)
+    try:
+        from gi.repository import Gdk
+        ec = Gtk.EventControllerKey()
+        def _esc(_c, keyval, *_):
+            if keyval == Gdk.KEY_Escape:
+                entry_box.set_visible(False)
+                return True
+            return False
+        entry.add_controller(ec)
+        ec.connect("key-pressed", _esc)
+    except Exception:
+        pass
 
     # selection -> propagate, handle empty state highlight
     def _on_select(_lb, row):
