@@ -8,7 +8,10 @@ class HeadlessDriver:
         self.tmpdir = Path(tmpdir or tempfile.mkdtemp(prefix="notty-e2e-"))
         self.db_path = str(self.tmpdir / "notes.db")
         os.environ["NOTTY_DB"] = self.db_path
-        from src.notty.app import NottyApp
+        try:
+            from notty.app import NottyApp
+        except ImportError:
+            from src.notty.app import NottyApp
         self.app = NottyApp(db_path=self.db_path)
     def click_new_note(self): return self.app.create_note()
     def type_in_editor(self, text):

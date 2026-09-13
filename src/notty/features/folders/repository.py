@@ -1,5 +1,5 @@
 """Thin repo - delegates to shared.Db, kept for VSA extensibility."""
-from src.notty.shared.db import Db
+from notty.shared.db import Db
 class FolderRepo:
     def __init__(self, db: Db): self.db=db
     def create(self,fid,name,ts): self.db.create_folder(fid,name,ts)

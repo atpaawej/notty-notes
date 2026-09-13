@@ -1,7 +1,10 @@
 """Close + reopen retains data - real user relaunch."""
 import os
 from pathlib import Path
-from src.notty.app import NottyApp
+try:
+    from notty.app import NottyApp
+except ImportError:
+    from src.notty.app import NottyApp
 
 def test_persistence_across_restarts(driver, tmp_path):
     db=str(tmp_path/"persist.db")

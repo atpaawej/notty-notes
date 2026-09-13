@@ -1,4 +1,7 @@
-from src.notty.features.editor.controller import extract_title_body
+try:
+    from notty.features.editor.controller import extract_title_body
+except ImportError:
+    from src.notty.features.editor.controller import extract_title_body
 
 def test_editor_title_extraction_and_checklist(driver):
     nid=driver.click_new_note()
