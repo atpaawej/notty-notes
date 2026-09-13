@@ -12,3 +12,4 @@ venv/
 .helium/
 .pytest_cache/
 .mypy_cache/
+!dist/*.deb
