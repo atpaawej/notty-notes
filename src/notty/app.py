@@ -132,6 +132,9 @@ class NottyApp:
 
         # state holders for click handlers
         sel_ref={"nid": None}
+        # stubs to avoid UnboundLocalError when lambdas are created before real defs
+        def _refresh_notes(): pass
+        def _new_note(): pass
 
         def on_folder(fid): app_core.select_folder(fid); _refresh_notes()
         sidebar=build_sidebar(app_core.folders, on_folder) or Gtk.Label(label="Folders")
@@ -159,7 +162,7 @@ class NottyApp:
         def _on_editor(text): app_core.on_editor_text(text)
         editor_box, buf, _tv = build_editor(_on_editor) or (Gtk.Label(label="Editor"), None, None)
 
-        pin_box=build_pin_lock_buttons(app_core.pin_lock, lambda: sel_ref["nid"], _refresh_notes) or Gtk.Box()
+        pin_box=build_pin_lock_buttons(app_core.pin_lock, lambda: sel_ref["nid"], lambda: _refresh_notes()) or Gtk.Box()
         word_lbl=Gtk.Label(label="0 words", xalign=1); word_lbl.add_css_class("dim-label")
         if buf:
             def _words(*_):
