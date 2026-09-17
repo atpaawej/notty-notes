@@ -23,7 +23,8 @@ fn dirs_next() -> PathBuf {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let path = data_dir();
-    let conn = db::open(path.to_string_lossy().as_ref()).expect("open notes.db");
+    let path_str = path.to_string_lossy().into_owned();
+    let conn = db::open(&path_str).expect("open notes.db");
     tauri::Builder::default()
         .manage(Mutex::new(conn))
         .invoke_handler(tauri::generate_handler![
