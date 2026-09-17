@@ -7,7 +7,7 @@ use tauri::State;
 
 pub type DbState = Mutex<rusqlite::Connection>;
 
-fn lock(state: &State<DbState>) -> Result<MutexGuard<'_, rusqlite::Connection>, String> {
+fn lock<'a>(state: &'a State<'a, DbState>) -> Result<MutexGuard<'a, rusqlite::Connection>, String> {
     state.lock().map_err(|e| e.to_string())
 }
 

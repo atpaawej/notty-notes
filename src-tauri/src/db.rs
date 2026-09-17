@@ -312,7 +312,8 @@ pub fn list_notes(conn: &Connection, f: NoteFilter) -> Result<Vec<Note>> {
         args.push(Box::new(f.limit));
         let mut stmt = conn.prepare(&sql)?;
         let params_ref: Vec<&dyn rusqlite::ToSql> = args.iter().map(|b| b.as_ref()).collect();
-        match stmt.query_map(params_ref.as_slice(), row_to_note) {
+        let query_result = stmt.query_map(params_ref.as_slice(), row_to_note);
+        match query_result {
             Ok(rows) => rows.collect(),
             Err(_) => Ok(vec![]), // malformed FTS query → empty, don't crash
         }
