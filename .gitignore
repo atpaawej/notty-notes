@@ -13,3 +13,7 @@ venv/
 .pytest_cache/
 .mypy_cache/
 !dist/*.deb
+# tauri+react port
+node_modules/
+frontend/dist/
+src-tauri/target/

@@ -1,0 +1,50 @@
+/* Notty web — ported from data/style.css (GTK tokens → CSS vars) */
+:root {
+  --bg: #fafaf9; --view: #ffffff; --card: #f4f4f3; --fg: #1c1c1c;
+  --border: rgba(0,0,0,.12); --accent: #3584e4; --accent-fg: #fff;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #242424; --view: #2e2e2e; --card: #303030; --fg: #f0f0f0; --border: rgba(255,255,255,.14); }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 system-ui, sans-serif; }
+.notty-root { display: flex; flex-direction: column; height: 100vh; }
+.notty-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.notty-wordmark { font-weight: 800; letter-spacing: -.02em; font-size: 17px; }
+.notty-header-actions { display: flex; gap: 8px; }
+.pill { border-radius: 999px; border: 1px solid var(--border); background: var(--view); padding: 7px 14px; cursor: pointer; }
+.pill.suggested { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 700; }
+.pill:disabled { opacity: .4; }
+.notty-panes { display: flex; flex: 1; min-height: 0; }
+.notty-sidebar { width: 240px; border-right: 1px solid var(--border); padding: 8px; overflow-y: auto; }
+.notty-section { font-size: 11px; font-weight: 700; letter-spacing: .06em; opacity: .55; margin: 12px 8px 6px; }
+.row { display: block; width: 100%; text-align: left; border: 0; background: transparent; color: inherit; padding: 7px 10px; border-radius: 10px; cursor: pointer; }
+.row.selected { background: rgba(53,132,228,.14); color: var(--accent); }
+.row.new { opacity: .7; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-pill { border-radius: 999px; border: 1px solid var(--border); background: rgba(53,132,228,.11); padding: 5px 11px; cursor: pointer; }
+.tag-pill.selected { background: var(--accent); color: var(--accent-fg); }
+.notty-list { width: 320px; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
+.notty-search { padding: 10px; display: flex; gap: 10px; align-items: center; }
+.notty-search input[type="text"], .notty-search input:not([type]) { flex: 1; border-radius: 12px; border: 1px solid transparent; background: rgba(127,127,127,.12); padding: 7px 10px; color: inherit; }
+#notty-search { flex: 1; border-radius: 12px; border: 1px solid transparent; background: rgba(127,127,127,.12); padding: 7px 10px; color: inherit; }
+.note-row { text-align: left; margin: 5px 8px; padding: 12px 14px; border-radius: 12px; background: var(--card); border: 1px solid var(--border); cursor: pointer; color: inherit; }
+.note-row.selected { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.note-title { font-weight: 650; }
+.note-preview { opacity: .62; font-size: 13px; }
+.notty-main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--view); }
+.notty-editor-card { flex: 1; margin: 12px; border: 1px solid var(--border); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; }
+.notty-toolbar { display: flex; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.notty-toolbar button { min-width: 32px; min-height: 32px; border-radius: 999px; border: 0; background: transparent; color: inherit; cursor: pointer; }
+.notty-toolbar button:hover { background: rgba(127,127,127,.15); }
+.notty-tiptap { padding: 20px 22px; outline: none; flex: 1; overflow-y: auto; }
+.notty-tiptap table { border-collapse: collapse; margin: 8px 0; }
+.notty-tiptap th, .notty-tiptap td { border: 1px solid var(--border); padding: 6px 10px; }
+.notty-tiptap pre { background: var(--card); padding: 10px 12px; border-radius: 8px; overflow-x: auto; }
+.notty-empty { padding: 40px 24px; text-align: center; opacity: .9; }
+.notty-empty .title { font-size: 17px; font-weight: 750; }
+.notty-empty .subtitle { opacity: .65; }
+.notty-empty-cta { border-radius: 999px; padding: 8px 18px; font-weight: 650; margin-top: 8px; cursor: pointer; }
+.notty-footer { display: flex; gap: 14px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--border); opacity: .85; font-size: 13px; }
+.notty-footer button { border-radius: 999px; border: 1px solid var(--border); background: var(--view); padding: 4px 10px; cursor: pointer; color: inherit; }

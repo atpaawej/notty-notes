@@ -1,0 +1,69 @@
+name: Tauri Release
+
+on:
+  push:
+    tags:
+      - "tauri-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Tauri system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl wget file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Frontend tests
+        working-directory: frontend
+        run: |
+          npm ci
+          npm test
+
+      - name: Backend tests
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: Build Tauri .deb
+        working-directory: src-tauri
+        run: ../frontend/node_modules/.bin/tauri build --bundles deb
+
+      - name: Smoke test binary
+        run: |
+          ls -la src-tauri/target/release/bundle/deb/
+          test -f src-tauri/target/release/notty
+
+      - name: Create GitHub Release with .deb
+        if: startsWith(github.ref, 'refs/tags/')
+        run: >
+          gh release create "${{ github.ref_name }}"
+          --title "Notty ${{ github.ref_name }} (Tauri + React)"
+          --notes "Desktop build: Tauri v2 + React + TipTap editor. Same notes.db format as the Python build — your existing notes carry over untouched."
+          src-tauri/target/release/bundle/deb/*.deb
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
